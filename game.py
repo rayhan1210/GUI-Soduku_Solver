@@ -63,7 +63,7 @@ class GuiBuilder:
 
     def userMessage(self):
         myFont = pygame.font.SysFont(None, 15, italic=True)
-        text = myFont.render("Choose Sudoku to S O L V E", True, (0, 180, 0))
+        text = myFont.render("Choose a Sudoku to S O L V E", True, (0, 180, 0))
         self.screen.blit(text, (150, 220))
 
 
