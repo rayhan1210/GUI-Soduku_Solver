@@ -1,13 +1,12 @@
 import pygame
 
+
 WINDOW_WIDTH = 450
 WIDOW_HEIGHT = 450
-BG_COLOR = (255, 255, 255)
+BG_COLOR = (16, 191, 224)
 LENGTH = 150
-
+color = [(255, 255, 255), (255, 0, 255), (0, 255, 255), (255, 255, 0)]
 pygame.init()
-screenA = pygame.display.set_mode([WINDOW_WIDTH, WIDOW_HEIGHT])
-screenA.fill(BG_COLOR)
 
 
 class GuiBuilder:
@@ -53,25 +52,20 @@ class GuiBuilder:
     def print_initialised_board(self, board, width, w_gap, h_gap, text_size):
         myFont = pygame.font.SysFont(None, text_size, italic=True)
         pygame.font.init()
-        for i in range(self.row):
-            for j in range(self.col):
+        for i in range(9):
+            for j in range(9):
                 if board[j][i] != 0:
                     text = myFont.render(str(board[j][i]), True, (0, 0, 0))
                     self.screen.blit(text, (i * (width / self.row) + (width / self.row // self.square)+w_gap,
                                             j * (width / self.col) + (width / self.col // self.square)+h_gap))
                     pygame.display.update()
 
-    def userMessage(self):
-        myFont = pygame.font.SysFont(None, 15, italic=True)
-        text = myFont.render("Choose a Sudoku to S O L V E", True, (0, 180, 0))
-        self.screen.blit(text, (150, 220))
-
 
 class GameLogic:
-    def __init__(self, game_board):
+    def __init__(self, game_board, screen):
         self.game_board = game_board
-        self.screen = pygame.display.set_mode([WINDOW_WIDTH, WIDOW_HEIGHT])
-        self.screen.fill((255, 255, 255))
+        self.screen = screen
+        # self.screen.fill((255, 255, 255))
         self.gui = GuiBuilder(9, 9, 3, self.screen, WINDOW_WIDTH, LENGTH, WIDOW_HEIGHT)
         self.gui.board_builder(1, 0, 0, 0, 3, 150)
         self.gui.print_initialised_board(self.game_board, 450, 0, 0, 30)
@@ -139,6 +133,40 @@ class GameLogic:
         return False
 
 
+class Screen:
+    def __init__(self, title, fill, width=450, height=450):
+        self. title = title
+        self.width = width
+        self.height = height
+        self.fill = fill
+        self.current = False
+
+    def createCurrentWindow(self):
+        pygame.display.set_caption(self.title)
+        self.current = True
+        self.screen = pygame.display.set_mode((self.width, self.height))
+
+    def endCurrentWindow(self):
+        self.current = False
+
+    def checkUpdate(self):
+        return self.current
+
+    def updateScreen(self):
+        if self.current:
+            self.screen.fill(self.fill)
+
+    def returnScreen(self):
+        return self.screen
+
+    def userMessage(self):
+        myFont = pygame.font.SysFont(None, 30, italic=True)
+        text = myFont.render("Choose a Sudoku to S O L V E", True, (0, 180, 0))
+        pygame.time.delay(5)
+        pygame.draw.rect(self.screen, (0, 255, 220), (70, 265, 310, 50), width=5)
+        self.screen.blit(text, (75, 280))
+
+
 def main():
     board = [
         [0, 7, 2, 0, 0, 4, 9, 0, 0],
@@ -165,45 +193,61 @@ def main():
     rectOne = pygame.Rect(70, 50, 150, 150)
     rectTwo = pygame.Rect(230, 50, 150, 150)
     loopRunner = True
-    pygame.draw.rect(screenA, (0, 0, 0), rectOne, width=2)
-    gui = GuiBuilder(9, 9, 4, screenA, 220, 150, 200)
+    menu = Screen("Menu win", BG_COLOR)
+    menu.createCurrentWindow()
+    menu.updateScreen()
+    menu.userMessage()
+    pygame.draw.rect(menu.returnScreen(), (0, 0, 0), rectOne, width=2)
+    gui = GuiBuilder(9, 9, 4, menu.returnScreen(), 220, 150, 200)
     gui.board_builder(2, 70, 50, 20, 9, 50)
     gui.print_initialised_board(board, 150, 70, 50, 15)
 
-    pygame.draw.rect(screenA, (0, 0, 0), rectTwo, width=2)
-    gui2 = GuiBuilder(9, 9, 4, screenA, 380, 150, 200)
+    pygame.draw.rect(menu.returnScreen(), (0, 0, 0), rectTwo, width=2)
+    gui2 = GuiBuilder(9, 9, 4, menu.returnScreen(), 380, 150, 200)
     gui2.board_builder(2, 230, 50, 180, 9, 50)
     gui2.print_initialised_board(boardB, 150, 230, 50, 15)
 
-    gui.userMessage()
+    win2 = Screen("Sudoku Board", BG_COLOR)
 
-    hover = True
+    def focusCheck(mouse_position, mouseclick):
+        if (70 <= mouse_position[0] <= 70 + 150) and (50 <= mouse_position[1] <= 50 + 150):
+            return 1, mouseclick[0]
+        elif (230 <= mouse_position[0] <= 230 + 150) and (50 <= mouse_position[1] <= 50 + 150):
+            return 2, mouseclick[0]
+        else:
+            return mouseclick
+
+    toggle = True
     while loopRunner:
+        mouse_pos = pygame.mouse.get_pos()
+        moue_pressed = pygame.mouse.get_pressed()
+        if toggle:
+            if pygame.Rect.collidepoint(rectOne, mouse_pos):
+                pygame.draw.rect(menu.returnScreen(), (255, 0, 0), rectOne, width=2)
+            else:
+                pygame.draw.rect(menu.returnScreen(), (0, 0, 0), rectOne, width=2)
+            if pygame.Rect.collidepoint(rectTwo, mouse_pos):
+                pygame.draw.rect(menu.returnScreen(), (255, 0, 0), rectTwo, width=2)
+            else:
+                pygame.draw.rect(menu.returnScreen(), (0, 0, 0), rectTwo, width=2)
+
+        if menu.checkUpdate():
+            screen2Btn = focusCheck(mouse_pos, moue_pressed)
+            if screen2Btn[1]:
+                toggle = False
+                win2.createCurrentWindow()
+                win2.updateScreen()
+                if screen2Btn[0] == 1:
+                    game = GameLogic(board, win2.returnScreen())
+                    game.solve_sudoku(board)
+                else:
+                    game = GameLogic(boardB, win2.returnScreen())
+                    game.solve_sudoku(boardB)
+                menu.endCurrentWindow()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 loopRunner = False
-            if pygame.Rect.collidepoint(rectOne, pygame.mouse.get_pos()):
-                pygame.draw.rect(screenA, (255, 0, 0), rectOne, width=2)
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    hover = False
-                    if not hover and pygame.Rect(70, 50, 150, 150).collidepoint(event.pos):
-                        screenA.fill(BG_COLOR)
-                        game = GameLogic(board)
-                        game.solve_sudoku(board)
-            else:
-                pygame.draw.rect(screenA, (0, 0, 0), rectOne, width=2)
-
-            if pygame.Rect.collidepoint(rectTwo, pygame.mouse.get_pos()):
-                pygame.draw.rect(screenA, (255, 0, 0), rectTwo, width=2)
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    print("need to clear screen")
-                    screenA.fill(BG_COLOR)
-                    pygame.display.update()
-                    game = GameLogic(boardB)
-                    game.solve_sudoku(boardB)
-            else:
-                pygame.draw.rect(screenA, (0, 0, 0), rectTwo, width=2)
         pygame.display.update()
 
 
